@@ -65,7 +65,7 @@ class CartDataManager {
         }
         liAmount.textContent = `Amount: ${++amountUser}`;
         CartApiManager.updateCurrentAmound(this.cartId, { productId: prodId, amount: amountUser })
-        window.location.reload()
+        // window.location.reload()
       };
 
       const btnMinus = document.createElement('button');
@@ -75,7 +75,7 @@ class CartDataManager {
         if (amountUser > 0) {
           liAmount.textContent = `Amount: ${--amountUser}`;
           CartApiManager.updateCurrentAmound(this.cartId, { productId: prodId, amount: amountUser })
-          window.location.reload()
+          // window.location.reload()
         } else {
           alert('Cannot reduce amount below zero');
         }
