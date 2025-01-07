@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Scroll</title>
+  <link rel="stylesheet" href="../style/header.css">
+  <link rel="stylesheet" href="../style/list.css">
+  <script src="../script/api/ProductsApiManager.js"></script>
+  <script src="../script/components/HeaderManager.js"></script>
+  <script src="../script/settings.js"></script>
+  <script src="../script/components/ListDataManager.js"></script>
+  <script src="../script/components/RequestManager.js"></script>
+  <script src="../script/components/SearchManager .js"></script>
+  <script src="../script/components/scrollPaginationManager.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+</head>
+<body>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      new HeaderManager('products/list.html', menuItems)
+    })
+  </script>
+  <div class="wrapper">
+    <div class="products__title">
+      <h1>Catalog Phone</h1>
+      <script>
+        const sortSelect = ListDataManager.creatSortSelect()          
+      </script>
+    </div>
+    <div class="products__bloc">
+      <div id="sidebar" class="products__sidebar"></div>
+      <div id="products-container" class="products__body"></div>
+      <div class="loading" id="loading">Page Loading...</div>
+    </div>
+    <!-- <div id="pagination-container" class="products__box-btn">
+      <button type="button" id="prev-button">Previous</button>
+      <button type="button" id="next-button">Next</button>
+    </div> -->
+  </div>
+  <script>
+    // Функція, що виконується при завантаженні сторінки
+    window.onload = async function () {
+      let dataSort = null;
+      const limit = 5;  
+
+      let loading = false;
+      let currentPage = 0;
+
+      const loadingElement = document.querySelector('.loading')
+      loadingElement.style.display = 'block'
+      //------------creat form search-------------  
+      async function setupFormSearch() {
+        const response = await RequestManager.fetchData('/products')
+        const sidebar = document.getElementById('sidebar')
+        ListDataManager.creatFormSearch()
+        ListDataManager.creatOthersSearchForm(response.data)  
+        //---search word----
+        const products = response.data        
+        const searchManager = new SearchManager()
+        searchManager.updateData(products)
+        
+        const saerchWord = document.querySelector('.form__search')
+        saerchWord.addEventListener('submit', async (event) => {
+        event.preventDefault()
+        const keyword = saerchWord.querySelector('input[name = "search"]').value.trim()
+        const result = searchManager.searchByKeyword(keyword)
+        sidebar.innerHTML = '';
+        ListDataManager.creatFormSearch()
+        ListDataManager.creatOthersSearchForm(response.data)  
+        fetchDataAndDisplay(result)        
+      })             
+      //---search by price---      
+      const allSearchForm = document.getElementById('all-form-search');
+      allSearchForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+         const selectedBrands = Array.from(document.querySelectorAll('input[name="brand"]:checked'))
+            .map(checkbox => checkbox.value);
+         const selectedSellers = Array.from(document.querySelectorAll('input[name="seller"]:checked'))
+           .map(checkbox => checkbox.value);
+         const minPrice = allSearchForm.querySelector('input[name="min_price"]') ? 
+                   allSearchForm.querySelector('input[name="min_price"]').value.trim() : '';
+         const maxPrice = allSearchForm.querySelector('input[name="max_price"]') ? 
+                   allSearchForm.querySelector('input[name="max_price"]').value.trim() : '';
+
+         if (selectedBrands.length === 0 && selectedSellers.length === 0 && minPrice === '' && maxPrice === '') {
+          alert('Please select at least one option!');
+          return;
+        }
+           const params = new URLSearchParams();
+
+            if (selectedBrands.length > 0) {
+              params.append('brands', selectedBrands.join(','));
+            }
+            if (selectedSellers.length > 0) {
+              params.append('sellers', selectedSellers.join(','));
+            }
+            if (minPrice) {
+              params.append('minPrice', minPrice);
+            }
+            if (maxPrice) {
+              params.append('maxPrice', maxPrice);
+            }
+           const url = `/products/search?${params.toString()}`
+          const result = await ProductsApiManager.searchFormProducts(url);
+            const res = Array.isArray(result.data) ? result.data : [result.data];       
+            sidebar.innerHTML = '';
+            ListDataManager.creatFormSearch()
+            ListDataManager.creatOthersSearchForm(response.data)  
+            fetchDataAndDisplay(res) 
+        });
+      }
+        setupFormSearch()
+      // Функция для получения данных с сервера
+      async function fetchProducts(page = 0, limit = 4, sort = null) {
+        const response = await RequestManager.fetchData(`/products/filter-data?page=${page}&limit=${limit}&sort=${dataSort}`);
+        if (!response || !response.data || response.totalDocuments === undefined) {
+          throw new Error('Invalid response structure');
+        }
+        return response;
+      }
+
+      // Функция для отображения продуктов
+      async function fetchDataAndDisplay(data) {
+        const tableContainer = document.getElementById('products-container');
+        // tableContainer.innerHTML = '';
+        try {
+          const productsList = data.map((prod) => ({
+            ...prod,
+            imageSrc: prod.imageSrc,
+            fullname: prod.fullname,
+            price: prod.price,
+            sellers: prod.sellers.seller,
+          }));
+
+          if (productsList) {
+            const fields = { imageSrc: '', fullname: '', price: '', sellers: '' };
+
+            const createLinkFunction = (id) => `/products/add/${id}`;
+            const productsBody = ListDataManager.createProducts(
+              productsList,
+              fields,
+              RequestManager.isAuthenticated() && createLinkFunction,
+              RequestManager.isAuthenticated()
+            );
+            tableContainer.append(productsBody);
+          } else {
+            throw new Error('Data missing');
+          }
+        } catch (error) {
+          console.error('Error loading data:', error);
+        }
+      }
+      
+      async function editDeleteFunc() {
+        const editBtn = document.querySelectorAll('.edit')
+        const deleteBtn = document.querySelectorAll('.delete')
+        editBtn.forEach(async (btn) => {          
+          btn.addEventListener('click', async () => {
+            const productId = btn.dataset.id;            
+            const response = await ProductsApiManager.getEditProd(`${productId}`);
+          })
+        })
+        deleteBtn.forEach(async (btn) => {
+          btn.addEventListener('click', async () => {          
+            const productId = btn.dataset.id;          
+            const response = await ProductsApiManager.deleteProduct(productId);
+          })
+        })
+      }
+      
+      // const scrollPaginationManager = new ScrollPaginationManager();
+
+      async function loadPage(page = 0) {
+        // if(scrollPaginationManager.loading) return
+        // scrollPaginationManager.loading = true;
+          if (loading) return;
+          loading = true;
+        try {
+          const result = await fetchProducts(page, limit);
+          fetchDataAndDisplay(result.data);
+          currentPage = page + 1;
+          // scrollPaginationManager.initData(page, result.totalPages)
+          await editDeleteFunc()          
+        } catch (error) {
+          console.error('Error loading page:', error);
+        } finally {
+          // scrollPaginationManager.loading = false;
+          loading = false
+          loadingElement.style.display = 'none';
+        }
+      }
+      //-------------select sort---------------
+      const selectSort = document.querySelector('.products__sort');
+      if (selectSort) {
+        selectSort.addEventListener('change', () => {
+          dataSort = selectSort.value;
+          currentPage = 0; 
+      document.getElementById('products-container').innerHTML = ''; 
+          scrollPaginationManager.currentPage = 0
+          loadPage(0);
+        });
+      }
+      //-------------scroll pagination---------------
+    async function handleScroll() {
+    const { scrollTop, scrollHeight, clientHeight } = document.documentElement  
+    if (scrollTop + clientHeight >= scrollHeight - 100) {   
+      await loadPage(currentPage)
+    }
+  }     
+  window.addEventListener('scroll', handleScroll);
+      loadPage(0);  
+      // await scrollPaginationManager.init(loadPage)
+      // window.addEventListener('scroll', scrollPaginationManager.handleScroll.bind(scrollPaginationManager));
+    };    
+  </script>
+</body>
+</html>

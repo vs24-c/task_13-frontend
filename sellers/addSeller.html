@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Seller</title>
+  <link rel="stylesheet" href="../style/header.css">
+  <link rel="stylesheet" href="../style/login.css">
+  <script src="../script/components/HeaderManager.js"></script>
+  <script src="../script/components/RequestManager.js"></script>
+  <script src="../script/settings.js"></script>
+  <script src="../script/api/SellerApiManager.js"></script>
+</head>
+<body>
+<script>
+// Використання HeaderManager для створення заголовка з меню
+document.addEventListener('DOMContentLoaded', () => {
+new HeaderManager('auth/login.html', menuItems)
+})
+</script>
+<div class="wrapper">
+ <main class="page">
+   <h1>Add Sellers</h1>
+    <form method="post" class="page__container form"    id="seller-form">
+    <label for="" class="form__label">Enter yor brand
+    <input type="text" name="seller" id="seller" placeholder="Brand Seller">
+    </label>
+  <button class="form__btn btn" type="submit">Add</button>
+      <!-- Контейнер для повідомлень -->
+<div id="messages"></div>
+    <!-- Контейнер для помилок -->
+<div id="errors"></div>
+</form>
+</main>
+</div>
+<script>
+  window.onload = function () {
+    const formSeller = document.getElementById('seller-form')
+    formSeller.addEventListener('submit', async (event) => {
+      event.preventDefault()
+      // const url = RequestManager.getServerRoute('/sellers/add')
+      const url = '/sellers/add' 
+      const form = event.target
+      const formData = new FormData(form); 
+      const body = Object.fromEntries(formData.entries());
+      try {       
+        const response = await SellerApiManager.addSeller(url,body)
+        console.log('Seller add successfully:', response)
+        window.location.href = '../products/add.html'
+      } catch (error) {
+        console.error('Error adding seller:', error)
+      }      
+    })
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../style/header.css">
+  <link rel="stylesheet" href="../style/cart.css">
+  <script src="../script/components/HeaderManager.js"></script>
+  <script src="../script/settings.js"></script>
+  <script src="../script/components/RequestManager.js"></script>
+  <script src="../script//components/CartDataManager.js"></script>
+  <script src="../script/api/CartApiMAnager.js"></script>
+  <title>Cart</title>
+</head>
+<body>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      new HeaderManager('products/list.html', menuItems)
+    })
+  </script>
+  <div class="wrapper">
+    <main class="page">
+      <h1>Cart</h1>
+      <div id="cart-container" class="container">
+        
+      </div>
+    </main>
+  </div>
+  <script>
+    window.onload = async function () {
+      const cart = await CartApiManager.getCart()      
+      if (cart) {
+        const cartDataManager = new CartDataManager(cart)
+        await cartDataManager.createCart()
+      } else {
+      const cartContainer = document.getElementById('cart-container')
+      const cartNotHave = document.createElement('div')
+      cartNotHave.className = 'cart-not-have'
+      cartNotHave.textContent = 'Your cart was not find.'
+      cartContainer.appendChild(cartNotHave)
+      }
+    }
+  </script>
+</body>
+</html>
