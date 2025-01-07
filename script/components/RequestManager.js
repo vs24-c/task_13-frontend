@@ -1,7 +1,7 @@
 class RequestManager {
   // Базовий URL для API запитів
   // static apiBase = 'http://localhost:3000/api/v1';
-  static apiBase = 'https://task-12-backend.onrender.com/api/v1';
+  static apiBase = 'https://task-13-backend.onrender.com/api/v1';
   // static apiBase = '';
 
   // Метод для отримання повного маршруту до сервера
